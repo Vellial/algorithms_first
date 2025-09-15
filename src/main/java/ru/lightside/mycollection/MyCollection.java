@@ -26,31 +26,55 @@ public class MyCollection<T extends Comparable<? super T>> {
 
     // Получать индекс местонахождения значения в коллекции (если значение в ней присутствует).
     public int indexOf(T value) {
-        // Collections.binarySearch возвращает индекс элемента, если он найден,
-        // или (-(insertion point) - 1), если не найден.
-        int index = Collections.binarySearch(data, value, comparator);
-        return (index >= 0) ? index : -1;
+        int lowIndex = 0;
+        int highIndex = data.size() - 1;
+
+        while (lowIndex <= highIndex) {
+            int middle = (lowIndex + highIndex) / 2;
+            T middleVal = data.get(middle);
+            int compareVal = compare(value, middleVal);
+
+            if (compareVal < 0) {
+                highIndex = middle - 1;
+            } else if (compareVal > 0) {
+                lowIndex = middle + 1;
+            } else {
+                return middle;
+            }
+        }
+        return -(lowIndex + 1);
     }
 
     // Удалять значение по индексу.
     public T deleteByIndex(int index) {
-        return data.remove(index);
+        if (index < 0 || index >= data.size()) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + data.size());
+        }
+
+        T removedElement = data.get(index);
+
+        for (int i = index; i < data.size() - 1; i++) {
+            data.set(i, data.get(i + 1));
+        }
+
+        return removedElement;
     }
 
     // Добавлять значение в коллекцию. Так как коллекция отсортирована, добавление по индексу недопустимо.
     public void add(T value) {
         Objects.requireNonNull(value, "Null values are not allowed in this collection.");
 
-        int insertionPoint = Collections.binarySearch(data, value, comparator);
+        if (data.isEmpty()) {
+            data.add(value);
+        }
 
-        // Если элемент не найден, корректируем insertionPoint,
-        // чтобы получить правильный индекс для вставки.
+        int insertionPoint = indexOf(value);
+
+        // Если элемент не найден, корректируем insertionPoint, чтобы получить правильный индекс для вставки.
         if (insertionPoint < 0) {
             insertionPoint = -(insertionPoint) - 1;
         }
-        // Если элемент найден (insertionPoint >= 0),
-        // то insertionPoint уже является корректным индексом для вставки
-        // (в случае дубликатов, будет вставлен перед/на месте найденного).
+        // Если элемент найден (insertionPoint >= 0), то insertionPoint уже является корректным индексом для вставки
 
         data.add(insertionPoint, value);
     }
@@ -60,6 +84,13 @@ public class MyCollection<T extends Comparable<? super T>> {
         return data.get(index);
     }
 
+    private int compare(T value, T middleVal) {
+        if (comparator != null) {
+            return comparator.compare(value, middleVal);
+        } else {
+            return value.compareTo(middleVal);
+        }
+    }
 
     /**
      * Возвращает количество элементов в коллекции.
